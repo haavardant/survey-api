@@ -1,3 +1,4 @@
+// survey-api.js
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
@@ -34,19 +35,30 @@ app.get('/api/survey/:slug', async (req, res) => {
 app.post('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
   const { title, pages } = req.body;
+
+  console.log("Received POST /api/survey/:slug");
+  console.log("Slug:", slug);
+  console.log("Title:", title);
+  console.log("Pages:", pages);
+
   try {
     await pool.query(
       `INSERT INTO surveys (slug, title, json)
        VALUES ($1, $2, $3)
        ON CONFLICT (slug) DO UPDATE
        SET title = $2, json = $3, updated_at = NOW()`,
-      [slug, title, { pages }]
+      [slug, title, JSON.stringify({ pages })]
     );
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error('Error saving survey:', err);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// Optional: fallback handler to catch undefined routes
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found', path: req.path });
 });
 
 app.listen(port, () => {
