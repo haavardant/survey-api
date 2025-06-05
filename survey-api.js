@@ -18,11 +18,15 @@ const pool = new pg.Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+// GET: Load survey
 app.get('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
   console.log("GET /api/survey:", slug);
   try {
-    const result = await pool.query('SELECT title, json FROM surveys WHERE slug = $1', [slug]);
+    const result = await pool.query(
+      'SELECT title, json FROM surveys WHERE slug = $1',
+      [slug]
+    );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Survey not found' });
     }
@@ -33,17 +37,18 @@ app.get('/api/survey/:slug', async (req, res) => {
   }
 });
 
+// POST: Save or update survey
 app.post('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
   const { title, pages } = req.body;
-  console.log("POST /api/survey:", slug, title, pages);
+  console.log("POST /api/survey:", slug, title);
   try {
     await pool.query(
       `INSERT INTO surveys (slug, title, json)
        VALUES ($1, $2, $3)
        ON CONFLICT (slug) DO UPDATE
        SET title = $2, json = $3, updated_at = NOW()`,
-      [slug, title, { pages }]
+      [slug, title, { pages }] // ✅ Use object, not string
     );
     res.status(200).json({ success: true });
   } catch (err) {
