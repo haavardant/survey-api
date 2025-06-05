@@ -1,4 +1,3 @@
-// survey-api.js
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
@@ -18,41 +17,39 @@ const pool = new pg.Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// GET: Load survey
 app.get('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
-  console.log("GET /api/survey:", slug);
   try {
-    const result = await pool.query(
-      'SELECT title, json FROM surveys WHERE slug = $1',
-      [slug]
-    );
+    const result = await pool.query('SELECT title, json FROM surveys WHERE slug = $1', [slug]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Survey not found' });
     }
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("Error fetching survey:", err);
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST: Save or update survey
 app.post('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
   const { title, pages } = req.body;
-  console.log("POST /api/survey:", slug, title);
+
   try {
+    // If pages is a string, parse it into JSON
+    const parsed = typeof pages === 'string' ? JSON.parse(pages) : pages;
+
     await pool.query(
       `INSERT INTO surveys (slug, title, json)
        VALUES ($1, $2, $3)
        ON CONFLICT (slug) DO UPDATE
        SET title = $2, json = $3, updated_at = NOW()`,
-      [slug, title, { pages }] // ✅ Use object, not string
+      [slug, title, { pages: parsed }]
     );
-    res.status(200).json({ success: true });
+
+    res.json({ success: true });
   } catch (err) {
-    console.error("Error saving survey:", err);
+    console.error('Error saving survey:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
