@@ -20,6 +20,7 @@ const pool = new pg.Pool({
 
 app.get('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
+  console.log("GET /api/survey:", slug);
   try {
     const result = await pool.query('SELECT title, json FROM surveys WHERE slug = $1', [slug]);
     if (result.rows.length === 0) {
@@ -27,7 +28,7 @@ app.get('/api/survey/:slug', async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching survey:", err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -35,12 +36,7 @@ app.get('/api/survey/:slug', async (req, res) => {
 app.post('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
   const { title, pages } = req.body;
-
-  console.log("Received POST /api/survey/:slug");
-  console.log("Slug:", slug);
-  console.log("Title:", title);
-  console.log("Pages:", pages);
-
+  console.log("POST /api/survey:", slug, title, pages);
   try {
     await pool.query(
       `INSERT INTO surveys (slug, title, json)
@@ -49,16 +45,11 @@ app.post('/api/survey/:slug', async (req, res) => {
        SET title = $2, json = $3, updated_at = NOW()`,
       [slug, title, JSON.stringify({ pages })]
     );
-    res.json({ success: true });
+    res.status(200).json({ success: true });
   } catch (err) {
-    console.error('Error saving survey:', err);
+    console.error("Error saving survey:", err);
     res.status(500).json({ error: 'Server error' });
   }
-});
-
-// Optional: fallback handler to catch undefined routes
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found', path: req.path });
 });
 
 app.listen(port, () => {
