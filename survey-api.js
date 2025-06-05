@@ -17,6 +17,7 @@ const pool = new pg.Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+// GET survey
 app.get('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
   try {
@@ -31,20 +32,20 @@ app.get('/api/survey/:slug', async (req, res) => {
   }
 });
 
+// POST survey
 app.post('/api/survey/:slug', async (req, res) => {
   const { slug } = req.params;
-  const { title, pages } = req.body;
+  const { title, json } = req.body;
 
   try {
-    // If pages is a string, parse it into JSON
-    const parsed = typeof pages === 'string' ? JSON.parse(pages) : pages;
+    const parsed = typeof json === 'string' ? JSON.parse(json) : json;
 
     await pool.query(
       `INSERT INTO surveys (slug, title, json)
        VALUES ($1, $2, $3)
        ON CONFLICT (slug) DO UPDATE
        SET title = $2, json = $3, updated_at = NOW()`,
-      [slug, title, { pages: parsed }]
+      [slug, title, parsed]
     );
 
     res.json({ success: true });
