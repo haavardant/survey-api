@@ -43,7 +43,7 @@ app.post('/api/survey/:slug', async (req, res) => {
        VALUES ($1, $2, $3)
        ON CONFLICT (slug) DO UPDATE
        SET title = $2, json = $3, updated_at = NOW()`,
-      [slug, title, JSON.stringify({ pages })]
+      [slug, title, { pages }]
     );
     res.status(200).json({ success: true });
   } catch (err) {
